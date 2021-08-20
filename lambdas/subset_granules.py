@@ -57,21 +57,25 @@ def process_payload(response):
 
         elif "Stats" in event:
             statsDetails = event["Stats"]["Details"]
+            print("Stats details bytesScanned: ")
             print(statsDetails["BytesScanned"])
             print("Stats details bytesProcessed: ")
             print(statsDetails["BytesProcessed"])
 
 
 def handler(event, context):
+    """
+    Query Historical Landsat gzipped json file and publish SNS message for
+    returned granules.
+
+    Parameters
+    ----------
+    event : dict
+        Structure of {"start_date": "2021/08/13", "end_date": "2021/08/14"}
+    """
     bucket = os.getenv("BUCKET")
     key = os.getenv("KEY")
     start_date = event["start_date"]
     end_date = event["end_date"]
     granules = select_granules(start_date, end_date, bucket, key)
     process_payload(granules)
-
-
-#  test_event = {
-#  "start_date": "2021/08/13",
-#  "end_date": "2021/08/14"
-#  }
