@@ -31,7 +31,10 @@ def publish_message(granule):
     print(granule)
     topic_arn = os.getenv("TOPIC_ARN")
     sns = boto3.client("sns")
-    message = {"landsat_product_id": granule["product_id"], "s3_location": granule["s3_location"]}
+    message = {
+        "landsat_product_id": granule["product_id"],
+        "s3_location": granule["s3_location"],
+    }
     message_string = json.dumps(message)
     sns.publish(
         TopicArn=topic_arn,

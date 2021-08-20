@@ -19,7 +19,15 @@ inst_reqs.append([f"aws_cdk.{x}=={aws_cdk_version}" for x in aws_cdk_reqs])
 
 extra_reqs = {
     "test": ["pytest", "pytest-cov", "black", "flake8"],
-    "dev": ["pytest", "black", "flake8", "nodeenv", "isort", "pre-commit", "pre-commit-hooks"],
+    "dev": [
+        "pytest",
+        "black",
+        "flake8",
+        "nodeenv",
+        "isort",
+        "pre-commit",
+        "pre-commit-hooks",
+    ],
 }
 
 setup(
