@@ -1,10 +1,11 @@
 import os
 import boto3
+import json
 
 
 def select_granules(start_date, end_date, bucket, key):
     s3 = boto3.client("s3")
-    granules = s3.select_object_content(
+    response = s3.select_object_content(
         Bucket=bucket,
         Key=key,
         ExpressionType="SQL",
@@ -24,14 +25,37 @@ def select_granules(start_date, end_date, bucket, key):
         },
         OutputSerialization={"JSON": {}},
     )
-    return granules
+    return response
 
 
-def process_payload(granules):
-    for event in granules["Payload"]:
+def publish_message(granule):
+    print(granule)
+    topic_arn = os.getenv("TOPIC_ARN")
+    sns = boto3.client("sns")
+    message = {
+        "landsat_product_id": granule["product_id"],
+        "s3_location": granule["s3_location"]
+    }
+    message_string = json.dumps(message)
+    sns.publish(
+        TopicArn=topic_arn,
+        Message=message_string,
+    )
+
+
+def process_payload(response):
+    for event in response["Payload"]:
         if "Records" in event:
             records = event["Records"]["Payload"].decode("utf-8")
-            print(records)
+            granules = records.split("\n")
+            for granule in granules:
+                try:
+                    granule_dict = json.loads(granule)
+                    publish_message(granule_dict)
+                except json.decoder.JSONDecodeError:
+                    print("Non-json line in response")
+                    print(granule)
+
         elif "Stats" in event:
             statsDetails = event["Stats"]["Details"]
             print(statsDetails["BytesScanned"])
@@ -52,4 +76,3 @@ def handler(event, context):
     #  "start_date": "2021/08/13",
     #  "end_date": "2021/08/14"
 #  }
-#  handler(test_event)

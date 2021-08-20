@@ -2,6 +2,7 @@ import os
 
 from aws_cdk import (
     aws_s3,
+    aws_sns,
     aws_lambda,
     aws_lambda_python,
     core,
@@ -18,6 +19,10 @@ class LandsatHistoricStack(core.Stack):
             bucket_name=f"{stack_name}-inventory-bucket",
         )
 
+        self.topic = aws_sns.Topic(
+            self, "LandsatHistoricTopic", display_name="Landsat Historic Topic"
+        )
+
         self.subset_granules_function = aws_lambda_python.PythonFunction(
             self,
             id=f"{stack_name}-subset-granules-function",
@@ -30,7 +35,9 @@ class LandsatHistoricStack(core.Stack):
             environment={
                 "BUCKET": self.landsat_inventory_bucket.bucket_name,
                 "KEY": "inventory_product_list.json.gz",
+                "TOPIC_ARN": self.topic.topic_arn,
             }
         )
 
         self.landsat_inventory_bucket.grant_read(self.subset_granules_function)
+        self.topic.grant_publish(self.subset_granules_function)
