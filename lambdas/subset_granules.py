@@ -1,6 +1,7 @@
-import os
-import boto3
 import json
+import os
+
+import boto3
 
 
 def select_granules(start_date, end_date, bucket, key):
@@ -18,9 +19,7 @@ def select_granules(start_date, end_date, bucket, key):
         " s.spacecraft_id = 'LANDSAT_8' AND"
         " s.product_id LIKE '%_T1'",
         InputSerialization={
-            "JSON": {
-                "Type": "DOCUMENT"
-            },
+            "JSON": {"Type": "DOCUMENT"},
             "CompressionType": "GZIP",
         },
         OutputSerialization={"JSON": {}},
@@ -32,10 +31,7 @@ def publish_message(granule):
     print(granule)
     topic_arn = os.getenv("TOPIC_ARN")
     sns = boto3.client("sns")
-    message = {
-        "landsat_product_id": granule["product_id"],
-        "s3_location": granule["s3_location"]
-    }
+    message = {"landsat_product_id": granule["product_id"], "s3_location": granule["s3_location"]}
     message_string = json.dumps(message)
     sns.publish(
         TopicArn=topic_arn,
@@ -73,6 +69,6 @@ def handler(event, context):
 
 
 #  test_event = {
-    #  "start_date": "2021/08/13",
-    #  "end_date": "2021/08/14"
+#  "start_date": "2021/08/13",
+#  "end_date": "2021/08/14"
 #  }

@@ -1,12 +1,6 @@
 import os
 
-from aws_cdk import (
-    aws_s3,
-    aws_sns,
-    aws_lambda,
-    aws_lambda_python,
-    core,
-)
+from aws_cdk import aws_lambda, aws_lambda_python, aws_s3, aws_sns, core
 
 
 class LandsatHistoricStack(core.Stack):
@@ -36,7 +30,7 @@ class LandsatHistoricStack(core.Stack):
                 "BUCKET": self.landsat_inventory_bucket.bucket_name,
                 "KEY": "inventory_product_list.json.gz",
                 "TOPIC_ARN": self.topic.topic_arn,
-            }
+            },
         )
 
         self.landsat_inventory_bucket.grant_read(self.subset_granules_function)

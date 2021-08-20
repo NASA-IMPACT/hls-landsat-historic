@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # runtime requirements.
 aws_cdk_version = "1.65.0"
@@ -19,7 +19,7 @@ inst_reqs.append([f"aws_cdk.{x}=={aws_cdk_version}" for x in aws_cdk_reqs])
 
 extra_reqs = {
     "test": ["pytest", "pytest-cov", "black", "flake8"],
-    "dev": ["pytest", "black", "flake8", "nodeenv"]
+    "dev": ["pytest", "black", "flake8", "nodeenv", "isort", "pre-commit", "pre-commit-hooks"],
 }
 
 setup(
