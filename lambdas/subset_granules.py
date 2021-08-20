@@ -43,22 +43,24 @@ def publish_message(granule):
 
 
 def process_payload(response):
+    split_prefix = ""
     for event in response["Payload"]:
         if "Records" in event:
             records = event["Records"]["Payload"].decode("utf-8")
-            granules = records.split("}\n")
+            granules = records.split("\n")
             for granule in granules:
                 try:
-                    # Granules are sometimes split by newlines.
-                    # Re-add the right hand object separator.
-                    newlines_removed = granule.replace("\n", "") + "}"
-                    print(newlines_removed)
-                    granule_dict = json.loads(newlines_removed)
+                    granule_dict = json.loads(granule)
                     publish_message(granule_dict)
                 except json.decoder.JSONDecodeError:
-                    print("Non-json line in response")
-                    #  print(granule)
-
+                    print("Stream event split")
+                    if len(split_prefix) > 0:
+                        granule_concat = split_prefix + granule
+                        split_prefix = ""
+                        granule_dict = json.loads(granule_concat)
+                        publish_message(granule_dict)
+                    else:
+                        split_prefix = granule
         elif "Stats" in event:
             statsDetails = event["Stats"]["Details"]
             print("Stats details bytesScanned: ")
