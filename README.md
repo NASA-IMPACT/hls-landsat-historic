@@ -32,7 +32,7 @@ Deploy current version of stack.
 $ tox -e dev -r -- deploy
 ```
 
-### Inventory Data
+## Inventory Data
 The subset_granules Lambda functions requires access to the USGS Historic Landsat Invetory.
 The USGS Historic Landsat Invetory is available via
 ```
