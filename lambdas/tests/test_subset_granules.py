@@ -14,6 +14,15 @@ def test_process_payload_granules(publish):
 
 
 @patch("lambdas.subset_granules.publish_message")
+def test_process_payload_granules_newlines(publish):
+    granules = '{"product_\nid": "1"}\n{"product_id": "2"}\n'
+    encoded = granules.encode("utf-8", "strict")
+    response = {"Payload": [{"Records": {"Payload": encoded}}]}
+    process_payload(response)
+    assert publish.call_count == 2
+
+
+@patch("lambdas.subset_granules.publish_message")
 def test_process_payload_stats(publish, capfd):
     response = {
         "Payload": [{"Stats": {"Details": {"BytesScanned": 1, "BytesProcessed": 2}}}]
