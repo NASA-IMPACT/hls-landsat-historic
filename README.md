@@ -13,7 +13,7 @@ AWS Stack for querying historic Landsat inventory and notifying [hls-orchestrati
 $ export LANDSAT_HISTORIC_STACKNAME=<Name of your stack>
 ```
 
-### CDK Commands
+## CDK Commands
 ### Synth
 Display generated cloud formation template that will be used to deploy.
 ```
@@ -32,7 +32,7 @@ Deploy current version of stack.
 $ tox -e dev -r -- deploy
 ```
 
-### Development
+## Development
 For active stack development run
 ```
 $ tox -e dev -r -- version
@@ -42,7 +42,7 @@ This creates a local virtualenv in the directory `devenv`.  To use it for develo
 $ source devenv/bin/activate
 ```
 
-### Tests
+## Tests
 To run unit test for all included Lambda functions
 ```
 tox -r
