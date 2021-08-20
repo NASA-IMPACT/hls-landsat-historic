@@ -32,6 +32,22 @@ Deploy current version of stack.
 $ tox -e dev -r -- deploy
 ```
 
+### Inventory Data
+The subset_granules Lambda functions requires access to the USGS Historic Landsat Invetory.
+The USGS Historic Landsat Invetory is available via
+```
+$ s3://usgs-landsat/collection02/inventory/inventory_product_list.zip --request-payer requester
+```
+S3 Select only supports [GZIP and BZIP2](https://docs.aws.amazon.com/AmazonS3/latest/userguide/selecting-content-from-objects.html) compression.  Recompress the inventory with
+```
+$ unzip inventory_product_list.zip
+$ gzip inventory_product_list.json
+```
+It can then be uploaded to the bucket created by your stack deploy
+```
+$ s3 cp inventory_product_list.json.gz s3://<bucket_name>
+```
+
 ## Development
 For active stack development run
 ```
