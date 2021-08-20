@@ -23,7 +23,7 @@ $ tox -e dev -r -- synth
 ### Diff
 Display a diff of the current deployment and any changes created.
 ```
-$ tox -e dev -r -- diff
+$ tox -e dev -r -- diff || true
 ```
 
 ### Deploy
