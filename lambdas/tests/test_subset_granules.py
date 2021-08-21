@@ -29,13 +29,13 @@ def test_process_payload_granules_split_events(publish):
     assert publish.call_count == 2
 
 
-#  @patch("lambdas.subset_granules.publish_message")
-#  def test_process_payload_stats(publish, capfd):
-#  response = {
-#  "Payload": [{"Stats": {"Details": {"BytesScanned": 1, "BytesProcessed": 2}}}]
-#  }
-#  process_payload(response)
-#  assert publish.call_count == 0
+@patch("lambdas.subset_granules.publish_message")
+def test_process_payload_stats(publish, capfd):
+    response = {
+        "Payload": [{"Stats": {"Details": {"BytesScanned": 1, "BytesProcessed": 2}}}]
+    }
+    process_payload(response)
+    assert publish.call_count == 0
 
-#  out, err = capfd.readouterr()
-#  assert out == "Stats details bytesScanned: \n1\nStats details bytesProcessed: \n2\n"
+    out, err = capfd.readouterr()
+    assert out == "Stats details bytesScanned: \n1\nStats details bytesProcessed: \n2\n"
