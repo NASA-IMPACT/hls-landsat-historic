@@ -23,6 +23,7 @@ class LandsatHistoricStack(core.Stack):
                 "arn:aws:iam::611670965994:role/HLS-lambda-role",
                 mutable=False
                 )
+
         self.subset_granules_function = aws_lambda_python.PythonFunction(
             self,
             id=f"{stack_name}-subset-granules-function",
