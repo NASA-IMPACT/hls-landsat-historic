@@ -1,7 +1,24 @@
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from lambdas.subset_granules import process_payload
+import pytest
+
+from lambdas.subset_granules import (
+    get_date_range,
+    handler,
+    process_payload,
+    set_last_date,
+)
+
+
+class SSM_Client:
+    def get_parameter(self, Name):
+        return "2021/07/01"
+
+
+@pytest.fixture
+def ssm_client():
+    return SSM_Client()
 
 
 @patch("lambdas.subset_granules.publish_message")
@@ -39,3 +56,55 @@ def test_process_payload_stats(publish, capfd):
 
     out, err = capfd.readouterr()
     assert out == "Stats details bytesScanned: \n1\nStats details bytesProcessed: \n2\n"
+
+
+@pytest.mark.parametrize(
+    "days_range,expected",
+    [
+        (30, {"start_date": "2021/06/01", "end_date": "2021/07/01"}),
+        (15, {"start_date": "2021/06/16", "end_date": "2021/07/01"}),
+    ],
+)
+def test_get_date_range(ssm_client, days_range, expected):
+    assert get_date_range(ssm_client, "name", days_range) == expected
+
+
+def test_set_last_date():
+    ssm_client = MagicMock()
+    parameter_name = "name"
+    last_date = "2021/06/16"
+    set_last_date(ssm_client, parameter_name, last_date)
+    ssm_client.put_parameter.assert_called_with(Name=parameter_name, Value=last_date)
+
+
+bucket = "bucket"
+key = "key"
+last_date = "last_date"
+
+
+@patch("lambdas.subset_granules.process_payload")
+@patch("lambdas.subset_granules.boto3")
+@patch("lambdas.subset_granules.select_granules")
+@patch.dict(
+    os.environ,
+    {
+        "BUCKET": bucket,
+        "KEY": key,
+        "LAST_DATE_PARAMETER_NAME": last_date,
+        "DAYS_RANGE": "30",
+        "TOPIC_ARN": "topic_arn",
+    },
+)
+def test_handler(select_granules, boto3, *args):
+    start_date = "2021/08/13"
+    end_date = "2021/08/14"
+    handler({"start_date": start_date, "end_date": end_date}, {})
+    select_granules.assert_called_with(start_date, end_date, bucket, key)
+
+    ssm_client = MagicMock()
+    ssm_client.get_parameter.return_value = start_date
+    boto3.client.return_value = ssm_client
+    handler({}, {})
+    boto3.client.assert_called_with("ssm")
+    select_granules.assert_called_with("2021/07/14", start_date, bucket, key)
+    ssm_client.get_parameter.assert_called_with(Name=last_date)
