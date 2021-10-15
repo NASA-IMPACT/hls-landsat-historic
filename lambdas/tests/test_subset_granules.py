@@ -13,7 +13,7 @@ from lambdas.subset_granules import (
 
 class SSM_Client:
     def get_parameter(self, Name):
-        return "2021/07/01"
+        return {"Parameter": {"Value": "2021/07/01"}}
 
 
 @pytest.fixture
@@ -74,7 +74,9 @@ def test_set_last_date():
     parameter_name = "name"
     last_date = "2021/06/16"
     set_last_date(ssm_client, parameter_name, last_date)
-    ssm_client.put_parameter.assert_called_with(Name=parameter_name, Value=last_date)
+    ssm_client.put_parameter.assert_called_with(
+        Name=parameter_name, Value=last_date, Overwrite=True
+    )
 
 
 bucket = "bucket"
@@ -83,6 +85,7 @@ last_date = "last_date"
 
 
 @patch("lambdas.subset_granules.process_payload")
+@patch("lambdas.subset_granules.get_date_range")
 @patch("lambdas.subset_granules.boto3")
 @patch("lambdas.subset_granules.select_granules")
 @patch.dict(
@@ -95,16 +98,15 @@ last_date = "last_date"
         "TOPIC_ARN": "topic_arn",
     },
 )
-def test_handler(select_granules, boto3, *args):
+def test_handler(select_granules, boto3, get_date_range, *args):
     start_date = "2021/08/13"
     end_date = "2021/08/14"
     handler({"start_date": start_date, "end_date": end_date}, {})
     select_granules.assert_called_with(start_date, end_date, bucket, key)
-
     ssm_client = MagicMock()
-    ssm_client.get_parameter.return_value = start_date
     boto3.client.return_value = ssm_client
+
+    get_date_range.return_value = {"start_date": "2021/07/14", "end_date": start_date}
     handler({}, {})
     boto3.client.assert_called_with("ssm")
     select_granules.assert_called_with("2021/07/14", start_date, bucket, key)
-    ssm_client.get_parameter.assert_called_with(Name=last_date)

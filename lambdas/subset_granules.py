@@ -72,7 +72,9 @@ def process_payload(response):
 
 def get_date_range(ssm_client, parameter_name, days_range):
     date_format = "%Y/%m/%d"
-    last_date = ssm_client.get_parameter(Name=parameter_name)
+    response = ssm_client.get_parameter(Name=parameter_name)
+    print(response)
+    last_date = response["Parameter"]["Value"]
     end_date = datetime.datetime.strptime(last_date, date_format)
     start_date = end_date - datetime.timedelta(days=days_range)
     return {
@@ -82,7 +84,7 @@ def get_date_range(ssm_client, parameter_name, days_range):
 
 
 def set_last_date(ssm_client, parameter_name, last_date):
-    ssm_client.put_parameter(Name=parameter_name, Value=last_date)
+    ssm_client.put_parameter(Name=parameter_name, Value=last_date, Overwrite=True)
 
 
 def handler(event, context):
@@ -107,6 +109,7 @@ def handler(event, context):
     except KeyError:
         ssm_client = boto3.client("ssm")
         date_range = get_date_range(ssm_client, parameter_name, int(days_range))
+        print
         start_date = date_range["start_date"]
         end_date = date_range["end_date"]
         granules = select_granules(start_date, end_date, bucket, key)
