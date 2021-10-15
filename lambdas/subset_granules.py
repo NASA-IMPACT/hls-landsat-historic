@@ -109,7 +109,6 @@ def handler(event, context):
         date_range = get_date_range(ssm_client, parameter_name, int(days_range))
         start_date = date_range["start_date"]
         end_date = date_range["end_date"]
-        print(start_date)
         granules = select_granules(start_date, end_date, bucket, key)
         process_payload(granules)
         set_last_date(ssm_client, parameter_name, start_date)

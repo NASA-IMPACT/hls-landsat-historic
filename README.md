@@ -11,6 +11,9 @@ AWS Stack for querying historic Landsat inventory and notifying [hls-orchestrati
 ## Environment Settings
 ```
 $ export LANDSAT_HISTORIC_STACKNAME=<Name of your stack>
+$ export LANDSAT_HISTORIC_LAST_DATE_INITIAL=<The date to start backwards historic processing YYYY/MM/DD>
+$ export LANDSAT_HISTORIC_DAYS_RANGE=<The number of days to process in each execution >
+$ export LANDSAT_HISTORIC_CRON_STRING=<AWS Cron string for execution frequency>
 ```
 
 ## CDK Commands
