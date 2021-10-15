@@ -68,3 +68,5 @@ class LandsatHistoricStack(core.Stack):
 
         self.landsat_inventory_bucket.grant_read(self.subset_granules_function)
         self.topic.grant_publish(self.subset_granules_function)
+        self.last_date_parameter.grant_read(self.subset_granules_function)
+        self.last_date_parameter.grant_write(self.subset_granules_function)
