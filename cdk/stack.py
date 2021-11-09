@@ -3,6 +3,7 @@ import os
 from aws_cdk import (
     aws_events,
     aws_events_targets,
+    aws_iam,
     aws_lambda,
     aws_lambda_python,
     aws_s3,
@@ -14,6 +15,11 @@ from aws_cdk import (
 LAST_DATE_INITIAL = os.getenv("LANDSAT_HISTORIC_LAST_DATE_INITIAL")
 DAYS_RANGE = os.getenv("LANDSAT_HISTORIC_DAYS_RANGE")
 CRON_STRING = os.getenv("LANDSAT_HISTORIC_CRON_STRING")
+
+if os.getenv("LANDSAT_HISTORIC_GCC", None) == "true":
+    GCC = True
+else:
+    GCC = False
 
 
 class LandsatHistoricStack(core.Stack):
@@ -28,6 +34,11 @@ class LandsatHistoricStack(core.Stack):
 
         self.topic = aws_sns.Topic(
             self, "LandsatHistoricTopic", display_name="Landsat Historic Topic"
+        )
+
+        self.role = aws_iam.Role(
+            self,
+            "LandsatHistoricFunction",
         )
 
         last_date_parameter_name = f"{stack_name}_last_date_parameter"
@@ -53,6 +64,7 @@ class LandsatHistoricStack(core.Stack):
             runtime=aws_lambda.Runtime.PYTHON_3_8,
             memory_size=5000,
             timeout=core.Duration.minutes(15),
+            role=self.role,
             environment={
                 "BUCKET": self.landsat_inventory_bucket.bucket_name,
                 "KEY": "inventory_product_list.json.gz",
@@ -66,7 +78,7 @@ class LandsatHistoricStack(core.Stack):
             aws_events_targets.LambdaFunction(self.subset_granules_function)
         )
 
-        self.landsat_inventory_bucket.grant_read(self.subset_granules_function)
-        self.topic.grant_publish(self.subset_granules_function)
-        self.last_date_parameter.grant_read(self.subset_granules_function)
-        self.last_date_parameter.grant_write(self.subset_granules_function)
+        self.landsat_inventory_bucket.grant_read(self.role)
+        self.topic.grant_publish(self.role)
+        self.last_date_parameter.grant_read(self.role)
+        self.last_date_parameter.grant_write(self.role)
