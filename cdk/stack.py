@@ -26,6 +26,12 @@ class LandsatHistoricStack(core.Stack):
     def __init__(self, scope: core.Construct, stack_name: str, **kwargs) -> None:
         super().__init__(scope, stack_name, **kwargs)
 
+        if GCC:
+            boundary_arn = os.environ["LANDSAT_HISTORIC_GCC_BOUNDARY_ARN"]
+            from permission_boundary import PermissionBoundaryAspect
+
+            self.node.apply_aspect(PermissionBoundaryAspect(boundary_arn))
+
         self.landsat_inventory_bucket = aws_s3.Bucket(
             self,
             "LandsatInventoryBucket",
