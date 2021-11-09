@@ -45,6 +45,7 @@ class LandsatHistoricStack(core.Stack):
         self.role = aws_iam.Role(
             self,
             "LandsatHistoricFunction",
+            assumed_by=aws_iam.ServicePrincipal("lambda.amazonaws.com"),
         )
 
         last_date_parameter_name = f"{stack_name}_last_date_parameter"
