@@ -9,6 +9,9 @@ aws_cdk_reqs = [
     "aws-lambda",
     "aws-sns",
     "aws-lambda-python",
+    "aws-ssm",
+    "aws-events",
+    "aws-events-targets",
 ]
 
 inst_reqs = [
