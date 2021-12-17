@@ -76,7 +76,7 @@ def get_date_range(ssm_client, parameter_name, days_range):
     print(response)
     last_date = response["Parameter"]["Value"]
     end_date = datetime.datetime.strptime(last_date, date_format)
-    start_date = end_date - datetime.timedelta(days=days_range-1)
+    start_date = end_date - datetime.timedelta(days=days_range - 1)
     new_last_date = start_date - datetime.timedelta(days=1)
 
     return {
