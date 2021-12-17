@@ -61,8 +61,22 @@ def test_process_payload_stats(publish, capfd):
 @pytest.mark.parametrize(
     "days_range,expected",
     [
-        (30, {"start_date": "2021/06/01", "end_date": "2021/07/01"}),
-        (15, {"start_date": "2021/06/16", "end_date": "2021/07/01"}),
+        (
+            30,
+            {
+                "start_date": "2021/06/02",
+                "end_date": "2021/07/01",
+                "new_last_date": "2021/06/01",
+            },
+        ),
+        (
+            15,
+            {
+                "start_date": "2021/06/17",
+                "end_date": "2021/07/01",
+                "new_last_date": "2021/06/16",
+            },
+        ),
     ],
 )
 def test_get_date_range(ssm_client, days_range, expected):
@@ -101,12 +115,17 @@ last_date = "last_date"
 def test_handler(select_granules, boto3, get_date_range, *args):
     start_date = "2021/08/13"
     end_date = "2021/08/14"
+    new_last_date = "2021/8/12"
     handler({"start_date": start_date, "end_date": end_date}, {})
     select_granules.assert_called_with(start_date, end_date, bucket, key)
     ssm_client = MagicMock()
     boto3.client.return_value = ssm_client
 
-    get_date_range.return_value = {"start_date": "2021/07/14", "end_date": start_date}
+    get_date_range.return_value = {
+        "start_date": "2021/07/14",
+        "end_date": start_date,
+        "new_last_date": new_last_date,
+    }
     handler({}, {})
     boto3.client.assert_called_with("ssm")
     select_granules.assert_called_with("2021/07/14", start_date, bucket, key)
