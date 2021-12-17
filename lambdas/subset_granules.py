@@ -76,10 +76,13 @@ def get_date_range(ssm_client, parameter_name, days_range):
     print(response)
     last_date = response["Parameter"]["Value"]
     end_date = datetime.datetime.strptime(last_date, date_format)
-    start_date = end_date - datetime.timedelta(days=days_range)
+    start_date = end_date - datetime.timedelta(days=days_range - 1)
+    new_last_date = start_date - datetime.timedelta(days=1)
+
     return {
         "start_date": start_date.strftime(date_format),
         "end_date": end_date.strftime(date_format),
+        "new_last_date": new_last_date.strftime(date_format),
     }
 
 
@@ -109,9 +112,8 @@ def handler(event, context):
     except KeyError:
         ssm_client = boto3.client("ssm")
         date_range = get_date_range(ssm_client, parameter_name, int(days_range))
-        print
         start_date = date_range["start_date"]
         end_date = date_range["end_date"]
         granules = select_granules(start_date, end_date, bucket, key)
         process_payload(granules)
-        set_last_date(ssm_client, parameter_name, start_date)
+        set_last_date(ssm_client, parameter_name, date_range["new_last_date"])
