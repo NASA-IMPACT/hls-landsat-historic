@@ -63,6 +63,10 @@ This creates a local virtualenv in the directory `devenv`.  To use it for develo
 ```
 $ source devenv/bin/activate
 ```
+Then run the following to install the project's pre-commit hooks
+```
+$ pre-commit install
+```
 
 ## Tests
 To run unit test for all included Lambda functions
