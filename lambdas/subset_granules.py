@@ -20,7 +20,11 @@ def select_granules(start_date, end_date, bucket, key):
         " s.spacecraft_id = 'LANDSAT_8' AND"
         " s.product_id LIKE '%_T1'",
         InputSerialization={
-            "JSON": {"Type": "DOCUMENT"},
+            "CSV": {
+                "FileHeaderInfo": "USE",
+                "RecordDelimiter": "\n",
+                "FieldDelimiter": ",",
+            },
             "CompressionType": "GZIP",
         },
         OutputSerialization={"JSON": {}},
