@@ -1,8 +1,108 @@
 import datetime
 import json
 import os
+import re
+from typing import Any, Dict
 
 import boto3
+
+
+def landsat_parse_scene_id(sceneid):
+    """
+    Parse Landsat-8 scene id.
+    Author @perrygeo - http://www.perrygeo.com
+    Attributes
+    ----------
+        sceneid : str
+            Landsat sceneid.
+    Returns
+    -------
+        out : dict
+            dictionary with metadata constructed from the sceneid.
+    """
+
+    precollection_pattern = (
+        r"^L"
+        r"(?P<sensor>\w{1})"
+        r"(?P<satellite>\w{1})"
+        r"(?P<path>[0-9]{3})"
+        r"(?P<row>[0-9]{3})"
+        r"(?P<acquisitionYear>[0-9]{4})"
+        r"(?P<acquisitionJulianDay>[0-9]{3})"
+        r"(?P<groundStationIdentifier>\w{3})"
+        r"(?P<archiveVersion>[0-9]{2})$"
+    )
+
+    collection_pattern = (
+        r"^L"
+        r"(?P<sensor>\w{1})"
+        r"(?P<satellite>\w{2})"
+        r"_"
+        r"(?P<processingCorrectionLevel>\w{4})"
+        r"_"
+        r"(?P<path>[0-9]{3})"
+        r"(?P<row>[0-9]{3})"
+        r"_"
+        r"(?P<acquisitionYear>[0-9]{4})"
+        r"(?P<acquisitionMonth>[0-9]{2})"
+        r"(?P<acquisitionDay>[0-9]{2})"
+        r"_"
+        r"(?P<processingYear>[0-9]{4})"
+        r"(?P<processingMonth>[0-9]{2})"
+        r"(?P<processingDay>[0-9]{2})"
+        r"_"
+        r"(?P<collectionNumber>\w{2})"
+        r"_"
+        r"(?P<collectionCategory>\w{2})$"
+    )
+
+    for pattern in [collection_pattern, precollection_pattern]:
+        match = re.match(pattern, sceneid, re.IGNORECASE)
+        if match:
+            meta: Dict[str, Any] = match.groupdict()
+            break
+
+    meta["scene"] = sceneid
+    if meta.get("acquisitionJulianDay"):
+        date = datetime.datetime(
+            int(meta["acquisitionYear"]), 1, 1
+        ) + datetime.timedelta(int(meta["acquisitionJulianDay"]) - 1)
+
+        meta["date"] = date.strftime("%Y-%m-%d")
+    else:
+        meta["date"] = "{}-{}-{}".format(
+            meta["acquisitionYear"], meta["acquisitionMonth"], meta["acquisitionDay"]
+        )
+
+    collection = meta.get("collectionNumber", "")
+    if collection != "":
+        collection = "c{}".format(int(collection))
+
+    return meta
+
+
+def build_landsat_s3_path(granule):
+    scene_id = granule["landsat_product_id"]
+    meta = landsat_parse_scene_id(scene_id)
+    if meta["sensor"] != "C":
+        raise NameError("USGS Landsat Scene sensor is not OLI-TIRS.\n")
+    ls_s3_path = (
+        "s3://usgs-landsat/collection"
+        + meta["collectionNumber"]
+        + "/level-"
+        + meta["processingCorrectionLevel"][1:2]
+        + "/standard/oli-tirs/"
+        + meta["acquisitionYear"]
+        + "/"
+        + meta["path"]
+        + "/"
+        + meta["row"]
+        + "/"
+        + scene_id
+        + "/"
+    )
+    granule["s3_location"] = ls_s3_path
+    return
 
 
 def select_granules(start_date, end_date, bucket, key):
@@ -11,20 +111,16 @@ def select_granules(start_date, end_date, bucket, key):
         Bucket=bucket,
         Key=key,
         ExpressionType="SQL",
-        Expression="select * from S3Object[*].available_products[*] s where"
-        " TO_TIMESTAMP(s.date_acquired, 'y/MM/dd') BETWEEN"
-        f" TO_TIMESTAMP('{start_date}', 'y/MM/dd') AND"
-        f" TO_TIMESTAMP('{end_date}', 'y/MM/dd') AND"
-        " s.processing_level = '1' AND"
+        Expression="select * from S3Object s where"
+        " TO_TIMESTAMP(s.date_acquired,'yyyy-MM-dd HH:mm:ss') BETWEEN"
+        f" TO_TIMESTAMP('{start_date}','yyyy-MM-dd HH:mm:ss') AND"
+        f" TO_TIMESTAMP('{end_date}','yyyy-MM-dd HH:mm:ss') AND"
+        " s.processing_level_short = '1' AND"
         " s.sensor_id = 'OLI_TIRS' AND"
-        " s.spacecraft_id = 'LANDSAT_8' AND"
-        " s.product_id LIKE '%_T1'",
+        " s.landsat_product_id LIKE '%_T1' AND"
+        " s.collection_category = 'T1'",
         InputSerialization={
-            "CSV": {
-                "FileHeaderInfo": "USE",
-                "RecordDelimiter": "\n",
-                "FieldDelimiter": ",",
-            },
+            "CSV": {"FileHeaderInfo": "Use"},
             "CompressionType": "GZIP",
         },
         OutputSerialization={"JSON": {}},
@@ -37,7 +133,7 @@ def publish_message(granule):
     topic_arn = os.getenv("TOPIC_ARN")
     sns = boto3.client("sns")
     message = {
-        "landsat_product_id": granule["product_id"],
+        "landsat_product_id": granule["landsat_product_id"],
         "s3_location": granule["s3_location"],
     }
     message_string = json.dumps(message)
@@ -55,6 +151,7 @@ def process_payload(response):
             granules = records.split("\n")
             for granule in granules:
                 try:
+                    build_landsat_s3_path(granule)
                     granule_dict = json.loads(granule)
                     publish_message(granule_dict)
                 except json.decoder.JSONDecodeError:
