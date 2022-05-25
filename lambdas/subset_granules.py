@@ -83,6 +83,8 @@ def landsat_parse_scene_id(sceneid):
 
 def build_landsat_s3_path(granule):
     scene_id = granule["landsat_product_id"]
+    if len(scene_id) < 40:
+        pass
     meta = landsat_parse_scene_id(scene_id)
     if meta["sensor"] != "C":
         raise NameError("USGS Landsat Scene sensor is not OLI-TIRS.\n")
@@ -106,6 +108,10 @@ def build_landsat_s3_path(granule):
 
 
 def select_granules(start_date, end_date, bucket, key):
+    date_format = "%Y-%m-%d %H:%M:%S"
+    dt_start_date = datetime.datetime.strptime(start_date, date_format)
+    dt_end_date = datetime.datetime.strptime(end_date, date_format)
+    assert dt_start_date < dt_end_date
     s3 = boto3.client("s3")
     response = s3.select_object_content(
         Bucket=bucket,
@@ -151,8 +157,8 @@ def process_payload(response):
             granules = records.split("\n")
             for granule in granules:
                 try:
-                    build_landsat_s3_path(granule)
                     granule_dict = json.loads(granule)
+                    build_landsat_s3_path(granule_dict)
                     publish_message(granule_dict)
                 except json.decoder.JSONDecodeError:
                     print("Stream event split")
@@ -160,6 +166,7 @@ def process_payload(response):
                         granule_concat = split_prefix + granule
                         split_prefix = ""
                         granule_dict = json.loads(granule_concat)
+                        build_landsat_s3_path(granule_dict)
                         publish_message(granule_dict)
                     else:
                         split_prefix = granule
@@ -172,7 +179,7 @@ def process_payload(response):
 
 
 def get_date_range(ssm_client, parameter_name, days_range):
-    date_format = "%Y/%m/%d"
+    date_format = "%Y-%m-%d %H:%M:%S"
     response = ssm_client.get_parameter(Name=parameter_name)
     print(response)
     last_date = response["Parameter"]["Value"]
@@ -199,7 +206,7 @@ def handler(event, context):
     Parameters
     ----------
     event : dict
-        Structure of {"start_date": "2021/08/13", "end_date": "2021/08/14"}
+        Structure of {"start_date": "2021-06-02 00:00:00", "2021-07-01 23:59:00"}
     """
     bucket = os.getenv("BUCKET")
     key = os.getenv("KEY")
