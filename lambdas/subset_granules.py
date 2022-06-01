@@ -89,25 +89,16 @@ def build_landsat_s3_path(granule):
     if meta["sensor"] != "C":
         raise NameError("USGS Landsat Scene sensor is not OLI-TIRS.\n")
     ls_s3_path = (
-        "s3://usgs-landsat/collection"
-        + meta["collectionNumber"]
-        + "/level-"
-        + meta["processingCorrectionLevel"][1:2]
-        + "/standard/oli-tirs/"
-        + meta["acquisitionYear"]
-        + "/"
-        + meta["path"]
-        + "/"
-        + meta["row"]
-        + "/"
-        + scene_id
-        + "/"
+        f's3://usgs-landsat/collection{meta["collectionNumber"]}'
+        f'/level-{meta["processingCorrectionLevel"][1:2]}'
+        f'/standard/oli-tirs/{meta["acquisitionYear"]}'
+        f'/{meta["path"]}/{meta["row"]}/{scene_id}/'
     )
     granule["s3_location"] = ls_s3_path
     return
 
 
-def select_granules(start_date, end_date, bucket, key):
+def select_granules(start_date, end_date, ls_platform, bucket, key):
     date_format = "%Y-%m-%d %H:%M:%S"
     dt_start_date = datetime.datetime.strptime(start_date, date_format)
     dt_end_date = datetime.datetime.strptime(end_date, date_format)
@@ -124,6 +115,7 @@ def select_granules(start_date, end_date, bucket, key):
         " s.processing_level_short = '1' AND"
         " s.sensor_id = 'OLI_TIRS' AND"
         " s.landsat_product_id LIKE '%_T1' AND"
+        f" s.landsat_product_id LIKE 'LC0{ls_platform}_%' AND"
         " s.collection_category = 'T1'",
         InputSerialization={
             "CSV": {"FileHeaderInfo": "Use"},
@@ -212,16 +204,17 @@ def handler(event, context):
     key = os.getenv("KEY")
     parameter_name = os.getenv("LAST_DATE_PARAMETER_NAME")
     days_range = os.getenv("DAYS_RANGE")
+    ls_platform = os.getenv("LANDSAT_PLATFORM")
     try:
         start_date = event["start_date"]
         end_date = event["end_date"]
-        granules = select_granules(start_date, end_date, bucket, key)
+        granules = select_granules(start_date, end_date, ls_platform, bucket, key)
         process_payload(granules)
     except KeyError:
         ssm_client = boto3.client("ssm")
         date_range = get_date_range(ssm_client, parameter_name, int(days_range))
         start_date = date_range["start_date"]
         end_date = date_range["end_date"]
-        granules = select_granules(start_date, end_date, bucket, key)
+        granules = select_granules(start_date, end_date, ls_platform, bucket, key)
         process_payload(granules)
         set_last_date(ssm_client, parameter_name, date_range["new_last_date"])
