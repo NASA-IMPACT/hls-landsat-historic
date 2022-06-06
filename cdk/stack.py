@@ -14,6 +14,7 @@ from aws_cdk import (
 
 LAST_DATE_INITIAL = os.getenv("LANDSAT_HISTORIC_LAST_DATE_INITIAL")
 DAYS_RANGE = os.getenv("LANDSAT_HISTORIC_DAYS_RANGE")
+LANDSAT_PLATFORM = os.getenv("LANDSAT_HISTORIC_PLATFORM")
 CRON_STRING = os.getenv("LANDSAT_HISTORIC_CRON_STRING")
 
 if os.getenv("LANDSAT_HISTORIC_GCC", None) == "true":
@@ -79,10 +80,11 @@ class LandsatHistoricStack(core.Stack):
             role=self.role,
             environment={
                 "BUCKET": self.landsat_inventory_bucket.bucket_name,
-                "KEY": "inventory_product_list.json.gz",
+                "KEY": "inventory_product_list.csv.gz",
                 "TOPIC_ARN": self.topic.topic_arn,
                 "LAST_DATE_PARAMETER_NAME": last_date_parameter_name,
                 "DAYS_RANGE": DAYS_RANGE,
+                "LANDSAT_PLATFORM": LANDSAT_PLATFORM,
             },
         )
 
