@@ -204,10 +204,11 @@ def handler(event, context):
     key = os.getenv("KEY")
     parameter_name = os.getenv("LAST_DATE_PARAMETER_NAME")
     days_range = os.getenv("DAYS_RANGE")
-    ls_platform = event["ls_platform"]
+    ls_platform = None
     try:
         start_date = event["start_date"]
         end_date = event["end_date"]
+        ls_platform = event["ls_platform"]
         granules = select_granules(start_date, end_date, ls_platform, bucket, key)
         process_payload(granules)
     except KeyError:
@@ -215,6 +216,8 @@ def handler(event, context):
         date_range = get_date_range(ssm_client, parameter_name, int(days_range))
         start_date = date_range["start_date"]
         end_date = date_range["end_date"]
+        if not ls_platform:
+            ls_platform = "8"
         granules = select_granules(start_date, end_date, ls_platform, bucket, key)
         process_payload(granules)
         set_last_date(ssm_client, parameter_name, date_range["new_last_date"])
