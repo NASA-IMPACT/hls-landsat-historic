@@ -204,10 +204,10 @@ def handler(event, context):
     key = os.getenv("KEY")
     parameter_name = os.getenv("LAST_DATE_PARAMETER_NAME")
     days_range = os.getenv("DAYS_RANGE")
+    ls_platform = event["ls_platform"]
     try:
         start_date = event["start_date"]
         end_date = event["end_date"]
-        ls_platform = event["ls_platform"]
         granules = select_granules(start_date, end_date, ls_platform, bucket, key)
         process_payload(granules)
     except KeyError:
