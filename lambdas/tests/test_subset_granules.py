@@ -122,11 +122,18 @@ def test_handler(select_granules, boto3, get_date_range, *args):
     start_date = "2021-08-13 00:00:00"
     end_date = "2021-08-14 00:00:00"
     new_last_date = "2021-08-12 00:00:00"
-    ls_platform = "8"
+    landsat_platform = "8"
     handler(
-        {"start_date": start_date, "end_date": end_date, "ls_platform": ls_platform}, {}
+        {
+            "start_date": start_date,
+            "end_date": end_date,
+            "landsat_platform": landsat_platform,
+        },
+        {},
     )
-    select_granules.assert_called_with(start_date, end_date, ls_platform, bucket, key)
+    select_granules.assert_called_with(
+        start_date, end_date, landsat_platform, bucket, key
+    )
     ssm_client = MagicMock()
     boto3.client.return_value = ssm_client
 
@@ -136,7 +143,8 @@ def test_handler(select_granules, boto3, get_date_range, *args):
         "new_last_date": new_last_date,
     }
     handler({}, {})
+    landsat_platform = None
     boto3.client.assert_called_with("ssm")
     select_granules.assert_called_with(
-        "2021-07-14 00:00:00", start_date, ls_platform, bucket, key
+        "2021-07-14 00:00:00", start_date, landsat_platform, bucket, key
     )
