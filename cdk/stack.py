@@ -12,10 +12,9 @@ from aws_cdk import (
     core,
 )
 
-LAST_DATE_INITIAL = os.getenv("LANDSAT_HISTORIC_LAST_DATE_INITIAL")
-DAYS_RANGE = os.getenv("LANDSAT_HISTORIC_DAYS_RANGE")
-LANDSAT_PLATFORM = os.getenv("LANDSAT_HISTORIC_PLATFORM")
-CRON_STRING = os.getenv("LANDSAT_HISTORIC_CRON_STRING")
+LAST_DATE_INITIAL = os.environ["LANDSAT_HISTORIC_LAST_DATE_INITIAL"]
+DAYS_RANGE = os.environ["LANDSAT_HISTORIC_DAYS_RANGE"]
+CRON_STRING = os.environ["LANDSAT_HISTORIC_CRON_STRING"]
 
 if os.getenv("LANDSAT_HISTORIC_GCC", None) == "true":
     GCC = True
@@ -84,7 +83,6 @@ class LandsatHistoricStack(core.Stack):
                 "TOPIC_ARN": self.topic.topic_arn,
                 "LAST_DATE_PARAMETER_NAME": last_date_parameter_name,
                 "DAYS_RANGE": DAYS_RANGE,
-                "LANDSAT_PLATFORM": LANDSAT_PLATFORM,
             },
         )
 
